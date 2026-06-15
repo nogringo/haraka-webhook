@@ -6,6 +6,7 @@ const os = require('node:os')
 const path = require('node:path')
 const fsp = require('node:fs/promises')
 const { Readable } = require('node:stream')
+const MessageStream = require('haraka-message-stream')
 const { loadConfig } = require('../lib/config')
 const { createSpoolItem, parseHeaders } = require('../lib/spool')
 
@@ -47,4 +48,31 @@ test('createSpoolItem writes message and metadata into pending spool', async () 
   assert.equal(meta.sender, 'sender@example.com')
   assert.deepEqual(meta.recipients, ['user@nmail.li'])
   assert.equal(meta.subject, 'Hello')
+})
+
+test('createSpoolItem copies finalized Haraka message streams', async () => {
+  const cfg = await tempCfg()
+  const messageStream = new MessageStream({ main: { spool_after: -1 } }, 'haraka-stream-test')
+  messageStream.add_line(Buffer.from('From: Sender <sender@example.com>\r\n'))
+  messageStream.add_line(Buffer.from('Subject: Haraka stream\r\n'))
+  messageStream.add_line(Buffer.from('\r\n'))
+  messageStream.add_line(Buffer.from('Body\r\n'))
+  await new Promise((resolve) => messageStream.add_line_end(resolve))
+
+  const connection = {
+    transaction: {
+      uuid: 'haraka-stream-test',
+      mail_from: { address: () => 'sender@example.com' },
+      rcpt_to: [{ address: () => 'user@nmail.li' }],
+      header_lines: ['From: Sender <sender@example.com>\r\n', 'Subject: Haraka stream\r\n'],
+      message_stream: messageStream,
+    },
+    remote: { ip: '203.0.113.10', host: 'mx.example.com' },
+    hello: { host: 'mx.example.com' },
+  }
+
+  const item = await createSpoolItem(cfg, connection)
+  const message = await fsp.readFile(path.join(item.path, 'message.eml'), 'utf8')
+
+  assert.equal(message, 'From: Sender <sender@example.com>\r\nSubject: Haraka stream\r\n\r\nBody\r\n')
 })
