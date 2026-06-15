@@ -1,0 +1,18 @@
+services:
+  haraka-webhook:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "25:25/tcp"
+    volumes:
+      - haraka-spool:/var/spool/haraka-webhook
+      # Mount certificate files read-only when STARTTLS is enabled, then set
+      # SMTP_TLS_CERT_PATH and SMTP_TLS_KEY_PATH in .env.
+      # - /etc/letsencrypt/live/mail.example.com/fullchain.pem:/certs/fullchain.pem:ro
+      # - /etc/letsencrypt/live/mail.example.com/privkey.pem:/certs/privkey.pem:ro
+    restart: unless-stopped
+
+volumes:
+  haraka-spool:

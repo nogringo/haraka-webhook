@@ -1,0 +1,22 @@
+{
+  "name": "haraka-webhook",
+  "version": "0.1.0",
+  "description": "Reusable Haraka SMTP receiver that spools inbound mail and forwards it to a Mailgun-style MIME webhook.",
+  "keywords": [
+    "haraka",
+    "smtp",
+    "email",
+    "inbound-email",
+    "webhook"
+  ],
+  "private": true,
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node bin/start.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "Haraka": "^3.3.1"
+  }
+}
