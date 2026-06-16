@@ -2,7 +2,7 @@
 
 const test = require('node:test')
 const assert = require('node:assert/strict')
-const { loadConfig, parseBool, parseList } = require('../lib/config')
+const { loadConfig, parseBool, parseDecisionPayloadMode, parseList } = require('../lib/config')
 
 test('parseBool handles common truthy values', () => {
   assert.equal(parseBool('true'), true)
@@ -24,6 +24,8 @@ test('loadConfig defaults to catch-all recipients', () => {
   const cfg = loadConfig({ WEBHOOK_URL: 'https://example.com/hook' })
   assert.equal(cfg.acceptAllRecipients, true)
   assert.equal(cfg.webhookUrl, 'https://example.com/hook')
+  assert.equal(cfg.webhookDecisionUrl, '')
+  assert.equal(cfg.webhookDecisionPayloadMode, 'minimal')
 })
 
 test('loadConfig accepts http webhook URLs', () => {
@@ -33,4 +35,27 @@ test('loadConfig accepts http webhook URLs', () => {
 
 test('loadConfig rejects non-http webhook URLs', () => {
   assert.throws(() => loadConfig({ WEBHOOK_URL: 'ftp://example.com/hook' }), /http/)
+})
+
+test('loadConfig accepts optional http decision URLs', () => {
+  const cfg = loadConfig({
+    WEBHOOK_URL: 'https://example.com/hook',
+    WEBHOOK_DECISION_URL: 'http://127.0.0.1:8080/decision',
+  })
+
+  assert.equal(cfg.webhookDecisionUrl, 'http://127.0.0.1:8080/decision')
+})
+
+test('loadConfig rejects non-http decision URLs', () => {
+  assert.throws(() => loadConfig({
+    WEBHOOK_URL: 'https://example.com/hook',
+    WEBHOOK_DECISION_URL: 'ftp://example.com/decision',
+  }), /WEBHOOK_DECISION_URL/)
+})
+
+test('parseDecisionPayloadMode accepts only known modes', () => {
+  assert.equal(parseDecisionPayloadMode(undefined), 'minimal')
+  assert.equal(parseDecisionPayloadMode('SUMMARY'), 'summary')
+  assert.equal(parseDecisionPayloadMode('full'), 'full')
+  assert.throws(() => parseDecisionPayloadMode('headers'), /WEBHOOK_DECISION_PAYLOAD_MODE/)
 })

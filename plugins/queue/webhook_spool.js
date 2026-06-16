@@ -1,7 +1,8 @@
 'use strict'
 
 const { loadConfig } = require('../../lib/config')
-const { createSpoolItem, ensureSpoolDirs } = require('../../lib/spool')
+const { queueMessage } = require('../../lib/queue')
+const { ensureSpoolDirs } = require('../../lib/spool')
 const { WebhookWorker } = require('../../lib/worker')
 
 exports.register = function () {
@@ -21,10 +22,28 @@ exports.hook_queue = function (next, connection) {
   const txn = connection && connection.transaction
   if (!txn || !txn.message_stream) return next(DENYSOFT, 'No message stream')
 
-  createSpoolItem(this.cfg, connection)
-    .then((item) => {
-      connection.loginfo(this, `spooled message ${item.id}`)
-      next(OK, `Queued as ${item.id}`)
+  queueMessage(this.cfg, connection)
+    .then((result) => {
+      if (result.status === 'queued') {
+        connection.loginfo(this, `spooled message ${result.id}`)
+        next(OK, result.message)
+        return
+      }
+
+      if (result.status === 'denied') {
+        connection.lognotice(this, `decision API denied message ${result.id}: ${result.reason || result.message}`)
+        next(DENY, result.message)
+        return
+      }
+
+      if (result.status === 'silent_denied') {
+        connection.lognotice(this, `decision API silently denied message ${result.id}: ${result.reason || result.internalMessage || 'silent_deny'}`)
+        next(OK, result.message)
+        return
+      }
+
+      connection.lognotice(this, `decision API unavailable for message ${result.id}: ${result.internalMessage || result.reason || 'temporary failure'}`)
+      next(DENYSOFT, result.message)
     })
     .catch((err) => {
       connection.logerror(this, `failed to spool message: ${err.stack || err.message}`)

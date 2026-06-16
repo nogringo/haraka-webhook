@@ -35,6 +35,13 @@ WEBHOOK_SIGNING_KEY=change-me
 ACCEPT_ALL_RECIPIENTS=true
 ```
 
+Optional pre-webhook decision API:
+
+```sh
+WEBHOOK_DECISION_URL=https://policy.example.com/haraka/decision
+WEBHOOK_DECISION_PAYLOAD_MODE=minimal
+```
+
 ## Webhook Payload
 
 The receiver POSTs `application/x-www-form-urlencoded` fields similar to
@@ -67,6 +74,15 @@ To restrict by domain:
 ACCEPT_ALL_RECIPIENTS=false
 ACCEPTED_DOMAINS=example.com,example.net
 ```
+
+## Decision API
+
+When `WEBHOOK_DECISION_URL` is set, each message is checked before it is accepted
+into the spool. The decision API can return `allow`, `deny`, or `silent_deny`.
+Failures are treated as temporary SMTP failures so the sender can retry later.
+
+`WEBHOOK_DECISION_PAYLOAD_MODE` controls how much message data is sent to that
+API: `minimal`, `summary`, or `full`. See [DecisionProtocol.md](docs/DecisionProtocol.md).
 
 ## TLS And Certificates
 
