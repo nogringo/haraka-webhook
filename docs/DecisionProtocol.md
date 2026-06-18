@@ -8,10 +8,13 @@ reject delivery with an SMTP error, or silently accept and drop the message.
 
 ```sh
 WEBHOOK_DECISION_URL=https://policy.example.com/haraka/decision
+WEBHOOK_DECISION_TOKEN=change-me
 WEBHOOK_DECISION_PAYLOAD_MODE=minimal
 ```
 
 - `WEBHOOK_DECISION_URL`: optional `http://` or `https://` endpoint.
+- `WEBHOOK_DECISION_TOKEN`: optional bearer token sent as
+  `Authorization: Bearer <token>`.
 - `WEBHOOK_DECISION_PAYLOAD_MODE`: `minimal`, `summary`, or `full`. Defaults to
   `minimal`.
 - `WEBHOOK_TIMEOUT_MS`: also controls the decision API timeout.

@@ -41,9 +41,11 @@ test('loadConfig accepts optional http decision URLs', () => {
   const cfg = loadConfig({
     WEBHOOK_URL: 'https://example.com/hook',
     WEBHOOK_DECISION_URL: 'http://127.0.0.1:8080/decision',
+    WEBHOOK_DECISION_TOKEN: 'secret-token',
   })
 
   assert.equal(cfg.webhookDecisionUrl, 'http://127.0.0.1:8080/decision')
+  assert.equal(cfg.webhookDecisionToken, 'secret-token')
 })
 
 test('loadConfig rejects non-http decision URLs', () => {

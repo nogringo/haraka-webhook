@@ -39,6 +39,7 @@ Optional pre-webhook decision API:
 
 ```sh
 WEBHOOK_DECISION_URL=https://policy.example.com/haraka/decision
+WEBHOOK_DECISION_TOKEN=change-me
 WEBHOOK_DECISION_PAYLOAD_MODE=minimal
 ```
 
@@ -83,6 +84,8 @@ Failures are treated as temporary SMTP failures so the sender can retry later.
 
 `WEBHOOK_DECISION_PAYLOAD_MODE` controls how much message data is sent to that
 API: `minimal`, `summary`, or `full`. See [DecisionProtocol.md](docs/DecisionProtocol.md).
+When `WEBHOOK_DECISION_TOKEN` is set, the decision request includes
+`Authorization: Bearer <token>`.
 
 ## TLS And Certificates
 

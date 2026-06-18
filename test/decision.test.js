@@ -62,6 +62,7 @@ test('normalizeDecision accepts allow, deny, and silent_deny only', () => {
 test('requestDecision posts JSON and returns unavailable for invalid responses', async () => {
   const cfg = {
     webhookDecisionUrl: 'https://example.com/decision',
+    webhookDecisionToken: 'secret-token',
     webhookDecisionPayloadMode: 'minimal',
     webhookTimeoutMs: 1000,
   }
@@ -81,6 +82,7 @@ test('requestDecision posts JSON and returns unavailable for invalid responses',
   assert.equal(request.url, 'https://example.com/decision')
   assert.equal(request.opts.method, 'POST')
   assert.equal(request.opts.headers['content-type'], 'application/json')
+  assert.equal(request.opts.headers.authorization, 'Bearer secret-token')
   assert.equal(JSON.parse(request.opts.body).protocol, 'haraka-webhook.decision.v1')
 
   const invalid = await requestDecision(cfg, meta, Buffer.from('raw'), {
