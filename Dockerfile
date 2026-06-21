@@ -1,5 +1,8 @@
 FROM node:24-alpine
 
+# Haraka's tls plugin shells out to `openssl` to generate dhparams.pem on startup
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 COPY package.json package-lock.json ./
