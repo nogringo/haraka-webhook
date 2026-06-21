@@ -8,10 +8,10 @@ services:
       - "25:25/tcp"
     volumes:
       - haraka-spool:/var/spool/haraka-webhook
-      # Mount certificate files read-only when STARTTLS is enabled, then set
-      # SMTP_TLS_CERT_PATH and SMTP_TLS_KEY_PATH in .env.
-      # - /etc/letsencrypt/live/mail.example.com/fullchain.pem:/certs/fullchain.pem:ro
-      # - /etc/letsencrypt/live/mail.example.com/privkey.pem:/certs/privkey.pem:ro
+      # TLS certs, read-only. Defaults to ./certs; point SMTP_TLS_CERT_DIR
+      # elsewhere (e.g. Caddy's cert storage) in .env, then set
+      # SMTP_TLS_CERT_PATH and SMTP_TLS_KEY_PATH to the files inside /certs.
+      - ${SMTP_TLS_CERT_DIR:-./certs}:/certs:ro
     restart: unless-stopped
 
 volumes:
