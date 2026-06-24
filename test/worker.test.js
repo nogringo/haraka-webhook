@@ -9,13 +9,14 @@ const { loadConfig } = require('../lib/config')
 const { ensureSpoolDirs, writeJsonDurable } = require('../lib/spool')
 const { WebhookWorker, classifyStatus, retryDelayMs } = require('../lib/worker')
 
-async function tempCfg() {
+async function tempCfg(env = {}) {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'haraka-webhook-worker-'))
   const cfg = loadConfig({
     WEBHOOK_URL: 'https://example.com/hook',
     SPOOL_DIR: dir,
     RETRY_INTERVAL_MS: '1000',
     RETRY_MAX_INTERVAL_MS: '5000',
+    ...env,
   })
   ensureSpoolDirs(cfg)
   return cfg
@@ -96,6 +97,27 @@ test('processItem dead-letters items with invalid metadata', async () => {
 
   const error = await fsp.readFile(path.join(cfg.deadDir, 'bad-meta', 'error.txt'), 'utf8')
   assert.match(error, /invalid metadata/)
+})
+
+test('deliver routes role recipients to the role webhook and others to the main one', async () => {
+  const cfg = await tempCfg({ WEBHOOK_ROLE_URL: 'https://example.com/role-hook' })
+  const worker = new WebhookWorker(cfg)
+
+  const originalFetch = global.fetch
+  const calledUrls = []
+  global.fetch = async (url) => {
+    calledUrls.push(url)
+    return { status: 200 }
+  }
+
+  try {
+    await worker.deliver({ recipients: ['abuse@example.com'] }, Buffer.from('raw'))
+    await worker.deliver({ recipients: ['alice@example.com'] }, Buffer.from('raw'))
+  } finally {
+    global.fetch = originalFetch
+  }
+
+  assert.deepEqual(calledUrls, ['https://example.com/role-hook', 'https://example.com/hook'])
 })
 
 test('processItem dead-letters items with missing message files', async () => {

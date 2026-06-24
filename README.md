@@ -87,6 +87,36 @@ API: `minimal`, `summary`, or `full`. See [DecisionProtocol.md](docs/DecisionPro
 When `WEBHOOK_DECISION_TOKEN` is set, the decision request includes
 `Authorization: Bearer <token>`.
 
+## Role Address Routing
+
+When `WEBHOOK_ROLE_URL` is set, mail addressed to a role local-part is delivered
+to that second webhook instead of `WEBHOOK_URL`:
+
+```sh
+WEBHOOK_ROLE_URL=https://webhook.example.com/role-inbound
+```
+
+If **any** recipient's local-part (the part before `@`, case-insensitive) is a
+role address, the whole message is POSTed to the role webhook; otherwise it goes
+to `WEBHOOK_URL`. The payload, signing key (`WEBHOOK_SIGNING_KEY`), and timeout
+are identical for both webhooks — only the URL differs. When `WEBHOOK_ROLE_URL`
+is unset, all mail goes to `WEBHOOK_URL` (unchanged behavior).
+
+The default role list is:
+
+```
+abuse, admin, administrator, billing, contact, daemon, help, hostmaster, info,
+legal, mail, mailerdaemon, marketing, noc, noreply, nostr, postmaster, privacy,
+root, sales, security, spam, sysadmin, support, usenet, uucp, webmaster, www
+```
+
+Override it with `ROLE_ADDRESSES` (comma-separated). Setting this **replaces**
+the default list rather than extending it:
+
+```sh
+ROLE_ADDRESSES=abuse,admin,postmaster,support
+```
+
 ## TLS And Certificates
 
 Haraka uses mounted certificate files for SMTP STARTTLS. Use `certbot`,

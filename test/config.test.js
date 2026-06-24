@@ -2,7 +2,14 @@
 
 const test = require('node:test')
 const assert = require('node:assert/strict')
-const { loadConfig, parseBool, parseDecisionPayloadMode, parseList } = require('../lib/config')
+const {
+  loadConfig,
+  parseBool,
+  parseDecisionPayloadMode,
+  parseList,
+  parseRoleAddresses,
+  DEFAULT_ROLE_ADDRESSES,
+} = require('../lib/config')
 
 test('parseBool handles common truthy values', () => {
   assert.equal(parseBool('true'), true)
@@ -60,4 +67,41 @@ test('parseDecisionPayloadMode accepts only known modes', () => {
   assert.equal(parseDecisionPayloadMode('SUMMARY'), 'summary')
   assert.equal(parseDecisionPayloadMode('full'), 'full')
   assert.throws(() => parseDecisionPayloadMode('headers'), /WEBHOOK_DECISION_PAYLOAD_MODE/)
+})
+
+test('loadConfig defaults role routing to disabled with the built-in role list', () => {
+  const cfg = loadConfig({ WEBHOOK_URL: 'https://example.com/hook' })
+  assert.equal(cfg.roleWebhookUrl, '')
+  assert.ok(cfg.roleAddresses instanceof Set)
+  assert.equal(cfg.roleAddresses.size, DEFAULT_ROLE_ADDRESSES.length)
+  for (const role of ['abuse', 'postmaster', 'www']) {
+    assert.ok(cfg.roleAddresses.has(role))
+  }
+})
+
+test('loadConfig accepts an optional http role webhook URL', () => {
+  const cfg = loadConfig({
+    WEBHOOK_URL: 'https://example.com/hook',
+    WEBHOOK_ROLE_URL: 'http://127.0.0.1:8080/role',
+  })
+  assert.equal(cfg.roleWebhookUrl, 'http://127.0.0.1:8080/role')
+})
+
+test('loadConfig rejects non-http role webhook URLs', () => {
+  assert.throws(() => loadConfig({
+    WEBHOOK_URL: 'https://example.com/hook',
+    WEBHOOK_ROLE_URL: 'ftp://example.com/role',
+  }), /WEBHOOK_ROLE_URL/)
+})
+
+test('parseRoleAddresses replaces the default list and normalizes entries', () => {
+  const roles = parseRoleAddresses('Abuse, ROOT')
+  assert.ok(roles instanceof Set)
+  assert.deepEqual([...roles], ['abuse', 'root'])
+})
+
+test('parseRoleAddresses falls back to the full default list when unset', () => {
+  const roles = parseRoleAddresses(undefined)
+  assert.equal(roles.size, DEFAULT_ROLE_ADDRESSES.length)
+  assert.ok(roles.has('postmaster'))
 })
