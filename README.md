@@ -160,11 +160,20 @@ SMTP_TLS_KEY_PATH=/certs/privkey.pem
 STARTTLS is opportunistic by default, which keeps delivery compatible with
 standard MX traffic.
 
+Only TLS 1.2 and 1.3 with ECDHE and AES-GCM or ChaCha20-Poly1305 cipher suites
+are offered, in the server's order of preference.
+
 ## DNS And Ports
 
 For each domain that should deliver mail here, create MX records pointing to the
 host running this container. That host also needs an `A` and/or `AAAA` record and
 public inbound `25/TCP`.
+
+Set `SMTP_HOSTNAME` to the MX host name (for example `mail.example.com`). It is
+used in the SMTP banner, `Received` and `Authentication-Results`. Without it,
+Haraka uses the container hostname.
+
+Only publish an `AAAA` record when port 25 is reachable over IPv6.
 
 Example:
 

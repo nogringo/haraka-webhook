@@ -62,6 +62,21 @@ test('loadConfig rejects non-http decision URLs', () => {
   }), /WEBHOOK_DECISION_URL/)
 })
 
+test('loadConfig reads an optional SMTP hostname', () => {
+  assert.equal(loadConfig({ WEBHOOK_URL: 'https://example.com/hook' }).smtpHostname, '')
+  assert.equal(loadConfig({
+    WEBHOOK_URL: 'https://example.com/hook',
+    SMTP_HOSTNAME: 'Mail.Example.com',
+  }).smtpHostname, 'mail.example.com')
+})
+
+test('loadConfig rejects an SMTP hostname that is not a hostname', () => {
+  assert.throws(() => loadConfig({
+    WEBHOOK_URL: 'https://example.com/hook',
+    SMTP_HOSTNAME: 'mail.example.com\nX-Injected: yes',
+  }), /SMTP_HOSTNAME/)
+})
+
 test('parseDecisionPayloadMode accepts only known modes', () => {
   assert.equal(parseDecisionPayloadMode(undefined), 'minimal')
   assert.equal(parseDecisionPayloadMode('SUMMARY'), 'summary')
