@@ -29,6 +29,18 @@
 
 ### rcpt
 
+## spf
+
+[haraka-plugin-spf](https://github.com/haraka/haraka-plugin-spf). Checks the
+HELO name and envelope sender, adds `Received-SPF` and an `spf=` entry to
+`Authentication-Results`. Configured in `config/spf.ini` (no rejection by default).
+
+## dkim
+
+[haraka-plugin-dkim](https://github.com/haraka/haraka-plugin-dkim). Verifies
+every `DKIM-Signature` and adds a `dkim=` entry per signature to
+`Authentication-Results`. Signing is disabled in `config/dkim.ini`.
+
 ## accept_all
 
 Recipient validation plugin.

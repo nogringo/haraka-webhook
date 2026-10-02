@@ -9,6 +9,7 @@ configurable webhook.
 - Listens for inbound SMTP delivery on `25/TCP`.
 - Accepts every recipient by default.
 - Optionally restricts accepted recipient domains with environment variables.
+- Verifies SPF and DKIM and records the results in `Authentication-Results`.
 - Stores raw RFC822/MIME messages in a persistent spool before acknowledging SMTP.
 - Retries webhook delivery in the background.
 - Sends `application/x-www-form-urlencoded` payloads with `body-mime`.
@@ -75,6 +76,32 @@ To restrict by domain:
 ACCEPT_ALL_RECIPIENTS=false
 ACCEPTED_DOMAINS=example.com,example.net
 ```
+
+## SPF And DKIM
+
+Every message is checked with SPF (envelope sender and HELO name) and DKIM
+(each `DKIM-Signature`). The results are prepended to the message, so the
+webhook sees them in both `body-mime` and `message-headers`:
+
+```
+Authentication-Results: mx.example.com;
+	spf=pass smtp.mailfrom=example.org;
+	dkim=pass header.i=@example.org header.d=example.org header.s=selector1
+Received-SPF: Pass (domain of example.org designates 203.0.113.10 as permitted sender) ...
+```
+
+A failed check does not reject the message: the webhook, or the decision API in
+`summary` or `full` mode, decides what to do with it. Any
+`Authentication-Results` header sent by the remote server is renamed to
+`Original-Authentication-Results`, so the only `Authentication-Results` left is
+the one written by this server.
+
+To reject mail that explicitly fails SPF during the SMTP session, set
+`mfrom_fail=true` in [config/spf.ini](config/spf.ini).
+
+SPF is skipped for connections from private IP addresses. If the container sees
+the Docker gateway (for example `172.17.0.1`) instead of the real client IP,
+SPF results will be missing.
 
 ## Decision API
 

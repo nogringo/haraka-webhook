@@ -8,7 +8,8 @@ const fsp = require('node:fs/promises')
 const { Readable } = require('node:stream')
 const MessageStream = require('haraka-message-stream')
 const { loadConfig } = require('../lib/config')
-const { createSpoolItem, parseHeaders } = require('../lib/spool')
+const { Header } = require('haraka-email-message')
+const { buildMeta, createSpoolItem, parseHeaders } = require('../lib/spool')
 
 async function tempCfg() {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'haraka-webhook-test-'))
@@ -22,6 +23,34 @@ test('parseHeaders preserves order and unfolds continuation lines', () => {
   assert.deepEqual(parseHeaders(['Subject: Hello\r\n', ' folded\r\n', 'From: a@example.com\r\n']), [
     ['Subject', 'Hello folded'],
     ['From', 'a@example.com'],
+  ])
+})
+
+test('parseHeaders unfolds multi-line entries from Haraka header lists', () => {
+  assert.deepEqual(parseHeaders(['Authentication-Results: mx.local;\r\n\tspf=pass\n', 'Subject: Hi\n folded\n']), [
+    ['Authentication-Results', 'mx.local; spf=pass'],
+    ['Subject', 'Hi folded'],
+  ])
+})
+
+test('buildMeta uses Haraka final headers so auth results come from this server', () => {
+  const header = new Header()
+  header.parse(['From: a@example.com\n', 'Subject: Hi\n'])
+  header.add('Authentication-Results', 'mx.local;\r\n\tspf=pass smtp.mailfrom=example.com;\r\n\tdkim=pass header.d=example.com')
+
+  const meta = buildMeta({
+    transaction: {
+      header,
+      header_lines: ['Authentication-Results: forged; dkim=pass\n', 'From: a@example.com\n', 'Subject: Hi\n'],
+      mail_from: { address: () => 'a@example.com' },
+      rcpt_to: [],
+    },
+  }, 'id')
+
+  assert.deepEqual(meta.headers, [
+    ['Authentication-Results', 'mx.local; spf=pass smtp.mailfrom=example.com; dkim=pass header.d=example.com'],
+    ['From', 'a@example.com'],
+    ['Subject', 'Hi'],
   ])
 })
 

@@ -51,7 +51,8 @@ Payload modes:
 - `minimal`: `id`, `createdAt`, envelope sender and recipients, `from`,
   `subject`, and SMTP remote metadata.
 - `summary`: all `minimal` fields plus ordered headers as `[name, value]`
-  tuples in `message.headers`.
+  tuples in `message.headers`. They include the `Authentication-Results` and
+  `Received-SPF` headers added by this server with the SPF and DKIM results.
 - `full`: all `summary` fields plus the full RFC822/MIME message as a UTF-8
   string in `message.rawMime`.
 
